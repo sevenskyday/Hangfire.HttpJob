@@ -12,8 +12,9 @@ namespace Hangfire.HttpJob.Support
     {
         public IEnumerable<Common.JobFilter> GetFilters(Job job)
         {
-            var arg = job.Args.FirstOrDefault() as HttpJobItem;
-            if (arg == null || string.IsNullOrEmpty(arg.QueueName)) return new Common.JobFilter[] { };
+            if (job == null)
+                return new Common.JobFilter[] { };
+            if (!(job.Args.FirstOrDefault() is HttpJobItem arg) || string.IsNullOrEmpty(arg.QueueName)) return new Common.JobFilter[] { };
 
 
             return new[]

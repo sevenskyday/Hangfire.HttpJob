@@ -9,3 +9,4 @@ _ReSharper.Caches/
 Test/TestHangfire/AntDeploy.json
 Test/RedisHangfire/AntDeploy.json
 Test/TestSqlserver/AntDeploy.json
+/Test/TestSqlserver/Properties/PublishProfiles/http___47.92.164.244_1080.pubxml

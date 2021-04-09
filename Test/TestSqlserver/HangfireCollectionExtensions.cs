@@ -131,7 +131,7 @@ namespace SqlserverHangfire
                 AppPath = "#",
                 IgnoreAntiforgeryToken = true,
                 DisplayStorageConnectionString = hangfireSettings.DisplayStorageConnectionString,
-                IsReadOnlyFunc = Context => false
+                IsReadOnlyFunc = Context => false,
             };
 
             if (hangfireSettings.HttpAuthInfo.IsOpenLogin && hangfireSettings.HttpAuthInfo.Users.Any())

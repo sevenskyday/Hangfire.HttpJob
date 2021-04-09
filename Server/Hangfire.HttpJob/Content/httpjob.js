@@ -1277,7 +1277,7 @@ function changeTable() {
 
         if (config.ShowTag && "True" == config.ShowTag && config.NeedAddRecurringHttpJobButton) {
             var tag = tdArr.eq(1).html();
-            if (tag.indexOf('Go to Tag') == -1) {
+            if (tag == undefined ||tag.indexOf('Go to Tag') == -1) {
                 tdArr.eq(1).append('<a class="label label-success text-uppercase" title="" data-original-title="Go to Tag Page" href="' + config.AppUrl + '/tags/search/' + tdArr.eq(1).text() + '" target="_blank">Tag</a>');
             }
            

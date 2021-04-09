@@ -30,7 +30,7 @@ namespace Hangfire.HttpJob.Server
 
         private static readonly ILog Logger = LogProvider.For<HttpJob>();
         private static Lazy<string> _currentStorage = new Lazy<string>(GetCurrentJobStorage);
-      
+
         #endregion
 
         #region Public
@@ -55,7 +55,7 @@ namespace Hangfire.HttpJob.Server
             {
                 object runTimeDataItem = null;
                 context?.Items.TryGetValue("Data", out runTimeDataItem);
-                if(runTimeDataItem!=null)
+                if (runTimeDataItem != null)
                 {
                     var runTimeData = runTimeDataItem as string;
                     if (!string.IsNullOrEmpty(runTimeData))
@@ -177,7 +177,7 @@ namespace Hangfire.HttpJob.Server
                 RunWithTry(() => context.WriteLine($"{Strings.JobParam}:【{JsonConvert.SerializeObject(item)}】"));
                 logList.Add($"{Strings.JobParam}:【{JsonConvert.SerializeObject(item, Formatting.Indented)}】");
                 HttpClient client;
-                
+
                 //当前job指定如果开启了proxy 并且 有配置代理 那么就走代理
                 if (CodingUtil.TryGetGlobalProxy(out var globalProxy) && item.Headers != null && item.Headers.TryGetValue("proxy", out var enableCurrentJobProxy) && !string.IsNullOrEmpty(enableCurrentJobProxy) && enableCurrentJobProxy.ToLower().Equals("true"))
                 {
@@ -193,7 +193,7 @@ namespace Hangfire.HttpJob.Server
                 }
 
                 var httpMesage = PrepareHttpRequestMessage(item, context, parentJob);
-                cancelToken = new CancellationTokenSource(TimeSpan.FromMilliseconds(item.Timeout));
+                cancelToken = new CancellationTokenSource(TimeSpan.FromSeconds(item.Timeout));
                 var httpResponse = client.SendAsync(httpMesage, cancelToken.Token).ConfigureAwait(false).GetAwaiter().GetResult();
                 HttpContent content = httpResponse.Content;
                 string result = content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -219,15 +219,15 @@ namespace Hangfire.HttpJob.Server
                             throw new AgentJobException(item.AgentClass, result);
                         }
 
-                        AddErrToJob(context, new Exception("ignore:"+ result));
+                        AddErrToJob(context, new Exception("ignore:" + result));
                     }
 
                     //jobagent的话 在header里面有一个agentServerId
                     GetCurrentJobAgentServerId(httpResponse, item, context);
-                  
+
                 }
                 //检查HttpResponse StatusCode
-                else if ((CodingUtil.HangfireHttpJobOptions.CheckHttpResponseStatusCode == null && (int)httpResponse.StatusCode < 400 ) || (CodingUtil.HangfireHttpJobOptions.CheckHttpResponseStatusCode?.Invoke(httpResponse.StatusCode, result) ?? true))
+                else if ((CodingUtil.HangfireHttpJobOptions.CheckHttpResponseStatusCode == null && (int)httpResponse.StatusCode < 400) || (CodingUtil.HangfireHttpJobOptions.CheckHttpResponseStatusCode?.Invoke(httpResponse.StatusCode, result) ?? true))
                 {
                     RunWithTry(() => context.WriteLine($"{Strings.ResponseCode}:{httpResponse.StatusCode} ===> CheckResult: Ok "));
                     logList.Add($"{Strings.ResponseCode}:{httpResponse.StatusCode} ===> CheckResult: Ok ");
@@ -242,7 +242,7 @@ namespace Hangfire.HttpJob.Server
                 if (!string.IsNullOrEmpty(item.CallbackEL))
                 {
                     var elResult = InvokeSpringElCondition(item.CallbackEL, result, context,
-                        new Dictionary<string, object> { { "resultBody", result } , { "StatusCode", (int)httpResponse.StatusCode } });
+                        new Dictionary<string, object> { { "resultBody", result }, { "StatusCode", (int)httpResponse.StatusCode } });
                     if (!elResult)
                     {
                         //错误的log都会在exception里面出
@@ -252,7 +252,7 @@ namespace Hangfire.HttpJob.Server
                     RunWithTry(() => context.WriteLine($"【{Strings.CallbackELExcuteResult}:Ok 】" + item.CallbackEL));
                 }
 
-               
+
                 if (parentJob != null)
                     RunWithTry(() => context.WriteLine($"【{Strings.CallbackSuccess}】[{item.CallbackRoot}]"));
 
@@ -365,11 +365,11 @@ namespace Hangfire.HttpJob.Server
 
         #region Private
 
-        
+
         /// <summary>
         /// 发送钉钉通知
         /// </summary>
-        private static void SendDingTalkNotice(HttpJobItem item,string jobId, string resString,bool isSuccess, Exception exception = null)
+        private static void SendDingTalkNotice(HttpJobItem item, string jobId, string resString, bool isSuccess, Exception exception = null)
         {
             try
             {
@@ -394,15 +394,15 @@ namespace Hangfire.HttpJob.Server
                 var logDetail = CodingUtil.GetCurrentJobDetailUrl(jobId);
 
                 var content =
-                    $@"## {item.JobName+(!string.IsNullOrEmpty(item.RecurringJobIdentifier) ? "-" + item.RecurringJobIdentifier : "")} {(isSuccess?"Success": "<font color=#E74C3C>Failed</font>")}{Strings.DingTalkTitle}
+                    $@"## {item.JobName + (!string.IsNullOrEmpty(item.RecurringJobIdentifier) ? "-" + item.RecurringJobIdentifier : "")} {(isSuccess ? "Success" : "<font color=#E74C3C>Failed</font>")}{Strings.DingTalkTitle}
 ### {Strings.DingTalkConfig}
->#### {Strings.QueuenName}:{(string.IsNullOrEmpty(item.QueueName)?"DEFAULT": item.QueueName)} 
+>#### {Strings.QueuenName}:{(string.IsNullOrEmpty(item.QueueName) ? "DEFAULT" : item.QueueName)} 
 ### {Strings.DingTalkRequestUrl}: 
 > #### {item.Url}
 ### {Strings.DingTalkResponse}:
 >#### {resString}   
 ### {Strings.DingTalkLogDetail}：
->#### {logDetail}{(exception!=null?"\n\n"+(CodingUtil.DingTalkErrReportSimplify()?exception.Message: exception.ToString()):"")}    
+>#### {logDetail}{(exception != null ? "\n\n" + (CodingUtil.DingTalkErrReportSimplify() ? exception.Message : exception.ToString()) : "")}    
 ";
 
                 var title = $"{Strings.DingTalkTitle}";
@@ -423,7 +423,7 @@ namespace Hangfire.HttpJob.Server
                 };
 
                 var requestUri = $"https://oapi.dingtalk.com/robot/send?access_token={dingTalk.Token}";
-                
+
                 HttpClient httpClient;
                 //当前job的钉钉如果开启了proxy 并且 有配置代理 那么就走代理
                 if (CodingUtil.TryGetGlobalProxy(out var globalProxy) && item.Headers != null && item.Headers.TryGetValue("dingProxy", out var enableDingProxy) && !string.IsNullOrEmpty(enableDingProxy) && enableDingProxy.ToLower().Equals("true"))
@@ -454,12 +454,12 @@ namespace Hangfire.HttpJob.Server
         /// <summary>
         /// 发送成功通知
         /// </summary>
-        private static void SendSuccess(string jobId,HttpJobItem item, string result)
+        private static void SendSuccess(string jobId, HttpJobItem item, string result)
         {
             new Task(() =>
             {
                 SendSuccessMail(item, result);
-                SendDingTalkNotice(item, jobId, result,true);
+                SendDingTalkNotice(item, jobId, result, true);
             }).Start();
         }
 
@@ -471,7 +471,7 @@ namespace Hangfire.HttpJob.Server
             new Task(() =>
             {
                 SendFailMail(item, result, exception);
-                SendDingTalkNotice(item, jobId, result,false,exception);
+                SendDingTalkNotice(item, jobId, result, false, exception);
             }).Start();
         }
 
@@ -491,7 +491,7 @@ namespace Hangfire.HttpJob.Server
                     : item.Mail;
 
                 if (string.IsNullOrWhiteSpace(mail)) return;
-                var subject = $"【JOB】[Success]" + item.JobName+(!string.IsNullOrEmpty(item.RecurringJobIdentifier)?"-"+item.RecurringJobIdentifier : "");
+                var subject = $"【JOB】[Success]" + item.JobName + (!string.IsNullOrEmpty(item.RecurringJobIdentifier) ? "-" + item.RecurringJobIdentifier : "");
                 result = result.Replace("\n", "<br/>");
                 result = result.Replace("\r\n", "<br/>");
                 EmailService.Instance.Send(mail, subject, result);
@@ -557,6 +557,8 @@ namespace Hangfire.HttpJob.Server
 
         private static string GetHtmlFormat(string v)
         {
+            if (string.IsNullOrEmpty(v))
+                return "";
             return v.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
         }
 
@@ -611,7 +613,7 @@ namespace Hangfire.HttpJob.Server
                 foreach (var header in item.Headers)
                 {
                     if (string.IsNullOrEmpty(header.Key)) continue;
-                    
+
                     //查看是否需要替换;
                     var headerKey = string.Empty;
                     if (header.Key.Contains("#{") || header.Key.Contains("${"))
@@ -668,7 +670,7 @@ namespace Hangfire.HttpJob.Server
                 {
                     request.Headers.Add("x-job-server", Convert.ToBase64String(Encoding.UTF8.GetBytes(currentServerId)));
                 }
-                
+
                 request.Headers.Add("x-job-agent-class", item.AgentClass);
                 if (!string.IsNullOrEmpty(headerKeys))
                 {
@@ -695,8 +697,8 @@ namespace Hangfire.HttpJob.Server
                     basicItem.DingTalk = CodingUtil.HangfireHttpJobOptions.DingTalkOption;
                 }
 
-                var jobUrl =  CodingUtil.GetCurrentJobDetailUrl(context.BackgroundJob.Id);
-                request.Headers.Add("x-job-url",Convert.ToBase64String(Encoding.UTF8.GetBytes(jobUrl)));
+                var jobUrl = CodingUtil.GetCurrentJobDetailUrl(context.BackgroundJob.Id);
+                request.Headers.Add("x-job-url", Convert.ToBase64String(Encoding.UTF8.GetBytes(jobUrl)));
                 request.Headers.Add("x-job-id", context.BackgroundJob.Id);
 
                 //detect-if-a-character-is-a-non-ascii-character
@@ -738,7 +740,7 @@ namespace Hangfire.HttpJob.Server
             var storage = JobStorage.Current;
 
             var storageType = storage.GetType();
-            var days =  CodingUtil.JobTimeoutDays();
+            var days = CodingUtil.JobTimeoutDays();
             if (storageType.Name == "MySqlStorage")
             {
                 var _connectionStringField = storageType.GetField("_connectionString", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -749,11 +751,11 @@ namespace Hangfire.HttpJob.Server
                 var tablePrefixField = _storageOptions?.GetType()?.GetProperty("TablesPrefix");
                 var tablePrefix = tablePrefixField?.GetValue(_storageOptions);
 
-                if (_connectionString==null || string.IsNullOrEmpty(_connectionString.ToString()))
+                if (_connectionString == null || string.IsNullOrEmpty(_connectionString.ToString()))
                 {
                     return "";
                 }
-                return JsonConvert.SerializeObject(new {Type="mysql", ExpireAtDays = days,  TablePrefix = tablePrefix, HangfireDb = _connectionString?.ToString()});
+                return JsonConvert.SerializeObject(new { Type = "mysql", ExpireAtDays = days, TablePrefix = tablePrefix, HangfireDb = _connectionString?.ToString() });
             }
             else if (storageType.Name == "SqlServerStorage")
             {
@@ -770,7 +772,7 @@ namespace Hangfire.HttpJob.Server
                 var tablePrefixField = _storageOptions?.GetType()?.GetField("_schemaName", BindingFlags.Instance | BindingFlags.NonPublic);
                 var tablePrefix = tablePrefixField?.GetValue(_storageOptions);
 
-                return JsonConvert.SerializeObject(new { Type = "sqlserver",TablePrefix = tablePrefix, ExpireAtDays = days, HangfireDb = _connectionString?.ToString() });
+                return JsonConvert.SerializeObject(new { Type = "sqlserver", TablePrefix = tablePrefix, ExpireAtDays = days, HangfireDb = _connectionString?.ToString() });
             }
             else if (storageType.Name == "RedisStorage")
             {
